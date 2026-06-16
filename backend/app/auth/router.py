@@ -35,6 +35,10 @@ async def register(
             detail="An account with this email already exists.",
         )
 
+    print("DEBUG password repr:", repr(body.password))
+    print("DEBUG password len:", len(body.password))
+    print("DEBUG password type:", type(body.password))
+
     user = User(
         email=body.email,
         full_name=body.full_name,
