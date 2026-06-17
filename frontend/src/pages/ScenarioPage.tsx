@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   PlusCircle,
   X,
@@ -10,6 +10,9 @@ import {
   Save,
   AlertTriangle,
   CheckCircle2,
+  ArrowRight,
+  SlidersHorizontal,
+  Sparkles,
 } from 'lucide-react'
 import api from '../lib/api'
 import type { Scenario, ScenarioPnL, FinancialPeriod } from '../types'
@@ -145,6 +148,7 @@ function ProjectionTable({ pnl }: { pnl: ScenarioPnL }) {
             {pnl.line_items.map((item, idx) => {
               const sub = isSubtotal(item.category)
               const favorable = item.change >= 0
+
               return (
                 <tr
                   key={`${item.description}-${idx}`}
@@ -155,10 +159,18 @@ function ProjectionTable({ pnl }: { pnl: ScenarioPnL }) {
                   <td className={`px-4 py-3 text-right tabular-nums ${sub ? 'text-teal-700' : 'text-gray-900'}`}>
                     {fmt(item.scenario_amount)}
                   </td>
-                  <td className={`px-4 py-3 text-right tabular-nums font-medium ${item.change === 0 ? 'text-gray-400' : favorable ? 'text-green-600' : 'text-red-600'}`}>
+                  <td
+                    className={`px-4 py-3 text-right tabular-nums font-medium ${
+                      item.change === 0 ? 'text-gray-400' : favorable ? 'text-green-600' : 'text-red-600'
+                    }`}
+                  >
                     {item.change === 0 ? '—' : `${favorable ? '+' : ''}${fmt(item.change)}`}
                   </td>
-                  <td className={`px-4 py-3 text-right tabular-nums ${item.change === 0 ? 'text-gray-400' : favorable ? 'text-green-600' : 'text-red-600'}`}>
+                  <td
+                    className={`px-4 py-3 text-right tabular-nums ${
+                      item.change === 0 ? 'text-gray-400' : favorable ? 'text-green-600' : 'text-red-600'
+                    }`}
+                  >
                     {item.change === 0 ? '—' : fmtPct(item.change_pct)}
                   </td>
                 </tr>
@@ -220,7 +232,6 @@ export default function ScenarioPage() {
 
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
-
   const [form, setForm] = useState<ScenarioForm>(emptyForm())
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -363,31 +374,35 @@ export default function ScenarioPage() {
   return (
     <div className="space-y-6">
       <div className="text-sm text-gray-500">
-        <Link to="/companies" className="hover:text-teal-600">Companies</Link>
+        <Link to="/workspace" className="hover:text-teal-600">
+          Workspace
+        </Link>
         <span className="mx-2">/</span>
         {companyId && (
           <>
-            <Link to={`/companies/${companyId}`} className="hover:text-teal-600">Company #{companyId}</Link>
+            <Link to={`/workspace/${companyId}`} className="hover:text-teal-600">
+              Company #{companyId}
+            </Link>
             <span className="mx-2">/</span>
           </>
         )}
-        <span className="text-gray-700">Scenario Modeling</span>
+        <span className="text-gray-700">Scenario Lab</span>
       </div>
 
-      <div className="rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-teal-50/40 shadow-sm">
+      <div className="rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-violet-50/40 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between px-6 py-6">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <div className="h-9 w-9 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center">
+              <div className="h-9 w-9 rounded-xl bg-violet-100 text-violet-700 flex items-center justify-center">
                 <FlaskConical size={18} />
               </div>
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">
-                What-if analysis
+              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-700">
+                Scenario Lab
               </span>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Scenario Modeling</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Adjust operating assumptions, save scenario versions, and project the P&amp;L impact.
+            <h1 className="text-2xl font-bold text-gray-900">Model what-if outcomes</h1>
+            <p className="text-sm text-gray-500 mt-1 max-w-2xl">
+              Build scenario cases from real financial periods, adjust key assumptions, and compare projected P&amp;L impact.
             </p>
           </div>
 
@@ -397,7 +412,8 @@ export default function ScenarioPage() {
               setFormError(null)
               setShowCreateModal(true)
             }}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-teal-700"
+            disabled={periods.length === 0}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-violet-300"
           >
             <PlusCircle size={16} />
             New Scenario
@@ -406,8 +422,25 @@ export default function ScenarioPage() {
       </div>
 
       {periods.length === 0 && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-          No financial periods found. Add a period with line items first before creating scenarios.
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle size={18} className="text-amber-600 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-amber-800">No financial periods available</p>
+              <p className="text-sm text-amber-700 mt-1">
+                Scenario modeling needs at least one financial period with line items.
+              </p>
+              {companyId && (
+                <Link
+                  to={`/workspace/${companyId}`}
+                  className="inline-flex items-center gap-2 mt-3 text-sm font-medium text-amber-800 hover:text-amber-900"
+                >
+                  Go to workspace
+                  <ArrowRight size={14} />
+                </Link>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -434,7 +467,7 @@ export default function ScenarioPage() {
               <div className="flex flex-col items-center justify-center py-12 px-5 text-center">
                 <FlaskConical size={30} className="text-gray-300 mb-3" />
                 <p className="text-sm font-medium text-gray-600">No scenarios yet</p>
-                <p className="text-xs text-gray-400 mt-1">Create one to start comparing what-if assumptions.</p>
+                <p className="text-xs text-gray-400 mt-1">Create your first saved case to start exploring outcomes.</p>
               </div>
             )}
 
@@ -449,7 +482,7 @@ export default function ScenarioPage() {
                       key={s.id}
                       onClick={() => selectScenario(s)}
                       className={`cursor-pointer px-4 py-4 transition-colors ${
-                        isActive ? 'bg-teal-50/80 border-l-2 border-teal-500' : 'hover:bg-gray-50'
+                        isActive ? 'bg-violet-50/80 border-l-2 border-violet-500' : 'hover:bg-gray-50'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -461,8 +494,9 @@ export default function ScenarioPage() {
                             </p>
                           )}
                         </div>
+
                         {isActive && (
-                          <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-semibold text-teal-700">
+                          <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700">
                             Active
                           </span>
                         )}
@@ -470,23 +504,29 @@ export default function ScenarioPage() {
 
                       <div className="flex gap-2 mt-3 flex-wrap">
                         {s.revenue_change_pct !== 0 && (
-                          <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${
-                            s.revenue_change_pct > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                          }`}>
+                          <span
+                            className={`text-[10px] px-2 py-1 rounded-full font-medium ${
+                              s.revenue_change_pct > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                            }`}
+                          >
                             Rev {fmtPct(s.revenue_change_pct)}
                           </span>
                         )}
                         {s.cogs_change_pct !== 0 && (
-                          <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${
-                            s.cogs_change_pct < 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                          }`}>
+                          <span
+                            className={`text-[10px] px-2 py-1 rounded-full font-medium ${
+                              s.cogs_change_pct < 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                            }`}
+                          >
                             COGS {fmtPct(s.cogs_change_pct)}
                           </span>
                         )}
                         {s.opex_change_pct !== 0 && (
-                          <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${
-                            s.opex_change_pct < 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                          }`}>
+                          <span
+                            className={`text-[10px] px-2 py-1 rounded-full font-medium ${
+                              s.opex_change_pct < 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                            }`}
+                          >
                             OpEx {fmtPct(s.opex_change_pct)}
                           </span>
                         )}
@@ -502,10 +542,10 @@ export default function ScenarioPage() {
         <div className="lg:col-span-8 xl:col-span-9">
           {!activeScenario && (
             <div className="rounded-2xl border border-gray-200 bg-white shadow-sm flex flex-col items-center justify-center py-20 text-center">
-              <FlaskConical size={38} className="text-gray-200 mb-3" />
+              <Sparkles size={38} className="text-gray-200 mb-3" />
               <p className="text-gray-700 font-medium">Select or create a scenario</p>
-              <p className="text-sm text-gray-400 mt-1">
-                Choose a saved scenario on the left to edit assumptions and project results.
+              <p className="text-sm text-gray-400 mt-1 max-w-md">
+                Choose a saved scenario on the left to edit assumptions, save changes, and project results.
               </p>
             </div>
           )}
@@ -523,11 +563,13 @@ export default function ScenarioPage() {
                         </span>
                       )}
                     </div>
+
                     <p className="text-sm text-gray-500">
                       {activePeriod
                         ? `${PERIOD_TYPE_LABELS[activePeriod.period_type] ?? activePeriod.period_type} · ${activePeriod.period_date}`
                         : `Period #${activeScenario.period_id}`}
                     </p>
+
                     {activeScenario.description && (
                       <p className="text-sm text-gray-400 mt-1">{activeScenario.description}</p>
                     )}
@@ -546,7 +588,7 @@ export default function ScenarioPage() {
                     <button
                       onClick={handleRunProjection}
                       disabled={projecting || saveMutation.isPending}
-                      className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-teal-400"
+                      className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-violet-400"
                     >
                       <TrendingUp size={15} />
                       {projecting ? 'Calculating…' : 'Run Projection'}
@@ -588,9 +630,12 @@ export default function ScenarioPage() {
 
                 <div className="rounded-2xl border border-gray-200 bg-white">
                   <div className="px-5 py-4 border-b border-gray-100">
-                    <h3 className="text-sm font-semibold text-gray-800">Assumptions</h3>
+                    <div className="flex items-center gap-2">
+                      <SlidersHorizontal size={15} className="text-gray-400" />
+                      <h3 className="text-sm font-semibold text-gray-800">Assumptions</h3>
+                    </div>
                     <p className="text-xs text-gray-500 mt-1">
-                      Change the key drivers below, then save and run a projection to refresh the modeled P&amp;L.
+                      Adjust key drivers below, then save and run a projection to refresh the modeled P&amp;L.
                     </p>
                   </div>
 
@@ -652,7 +697,7 @@ export default function ScenarioPage() {
                         <TrendingUp size={28} className="mx-auto text-gray-200 mb-3" />
                         <p className="text-sm font-medium text-gray-600">No projection yet</p>
                         <p className="text-xs text-gray-400 mt-1">
-                          Save your assumptions and run the model to see projected results.
+                          Save assumptions and run the model to see projected results.
                         </p>
                       </div>
                     )}
@@ -704,7 +749,7 @@ export default function ScenarioPage() {
                   required
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  className="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                   placeholder="e.g. Oil price recovery"
                 />
               </div>
@@ -714,7 +759,7 @@ export default function ScenarioPage() {
                 <input
                   value={form.description}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                  className="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                   placeholder="Brief description of the scenario"
                 />
               </div>
@@ -725,7 +770,7 @@ export default function ScenarioPage() {
                   required
                   value={form.period_id}
                   onChange={(e) => setForm((f) => ({ ...f, period_id: e.target.value }))}
-                  className="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                 >
                   <option value="">Select a period…</option>
                   {periods.map((p) => (
@@ -750,7 +795,7 @@ export default function ScenarioPage() {
                 <button
                   type="submit"
                   disabled={createMutation.isPending}
-                  className="flex-1 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-teal-700 disabled:bg-teal-400"
+                  className="flex-1 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-violet-700 disabled:bg-violet-400"
                 >
                   {createMutation.isPending ? 'Creating…' : 'Create Scenario'}
                 </button>

@@ -273,14 +273,14 @@ export default function DashboardPage() {
 
           <div className="flex flex-wrap gap-2">
             <Link
-              to="/companies"
+              to="/workspace"
               className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
               <Building2 size={15} />
               Workspace
             </Link>
             <Link
-              to="/commodity"
+              to="/commodities"
               className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
               <TrendingUp size={15} />

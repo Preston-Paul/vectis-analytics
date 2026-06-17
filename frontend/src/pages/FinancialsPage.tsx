@@ -22,6 +22,8 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   CalendarDays,
+  ArrowRight,
+  Layers3,
 } from 'lucide-react'
 import api from '../lib/api'
 import type { IncomeStatement, VarianceItem } from '../types'
@@ -129,7 +131,11 @@ function KpiCard({
           <p className="text-xs font-medium text-gray-500">{label}</p>
           <p className="text-xl font-bold text-gray-900 mt-1 tabular-nums">{value}</p>
           {change != null && (
-            <div className={`mt-2 inline-flex items-center gap-1 text-xs font-semibold ${positive ? 'text-green-600' : 'text-red-600'}`}>
+            <div
+              className={`mt-2 inline-flex items-center gap-1 text-xs font-semibold ${
+                positive ? 'text-green-600' : 'text-red-600'
+              }`}
+            >
               {positive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
               {fmtPct(change)}
             </div>
@@ -164,10 +170,7 @@ function IncomeStatementTab({ companyId, periodId }: { companyId: string; period
 
   return (
     <div className="space-y-6">
-      <SectionCard
-        title="Income Statement"
-        subtitle="Core P&L waterfall for the selected reporting period."
-      >
+      <SectionCard title="Income Statement" subtitle="Core P&L waterfall for the selected reporting period.">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-5">
           <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
             <p className="text-xs text-gray-500">Revenue</p>
@@ -201,16 +204,14 @@ function IncomeStatementTab({ companyId, periodId }: { companyId: string; period
               {rows.map(([label, value, subtotal], idx) => (
                 <tr
                   key={label}
-                  className={
-                    subtotal
-                      ? 'bg-teal-50 font-semibold'
-                      : idx % 2 === 0
-                      ? 'bg-white'
-                      : 'bg-gray-50/60'
-                  }
+                  className={subtotal ? 'bg-teal-50 font-semibold' : idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/60'}
                 >
                   <td className={`px-4 py-3 ${subtotal ? 'text-teal-800' : 'text-gray-900'}`}>{label}</td>
-                  <td className={`px-4 py-3 text-right tabular-nums ${value < 0 ? 'text-red-600' : subtotal ? 'text-teal-700' : 'text-gray-900'}`}>
+                  <td
+                    className={`px-4 py-3 text-right tabular-nums ${
+                      value < 0 ? 'text-red-600' : subtotal ? 'text-teal-700' : 'text-gray-900'
+                    }`}
+                  >
                     {fmtFull(value)}
                   </td>
                 </tr>
@@ -291,19 +292,18 @@ function VarianceTab({ companyId, periodId }: { companyId: string; periodId: str
         </div>
         <div className="rounded-xl border border-gray-200 bg-white p-4">
           <p className="text-xs text-gray-500">Largest variance</p>
-          <p className="text-sm font-semibold text-gray-900 mt-1 truncate">
-            {summary.biggest?.description ?? '—'}
-          </p>
-          <p className={`text-sm font-bold mt-1 tabular-nums ${(summary.biggest?.variance_dollar ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          <p className="text-sm font-semibold text-gray-900 mt-1 truncate">{summary.biggest?.description ?? '—'}</p>
+          <p
+            className={`text-sm font-bold mt-1 tabular-nums ${
+              (summary.biggest?.variance_dollar ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'
+            }`}
+          >
             {summary.biggest?.variance_dollar != null ? fmtFull(summary.biggest.variance_dollar) : '—'}
           </p>
         </div>
       </div>
 
-      <SectionCard
-        title="Variance Analysis"
-        subtitle="Actual versus budget by line item for the selected period."
-      >
+      <SectionCard title="Variance Analysis" subtitle="Actual versus budget by line item for the selected period.">
         <div className="overflow-x-auto rounded-xl border border-gray-200">
           <table className="w-full text-sm border-collapse">
             <thead className="bg-gray-50">
@@ -384,29 +384,24 @@ function TrendsTab({ companyId }: { companyId: string }) {
           tone="teal"
           icon={<TrendingUp size={16} />}
         />
-        <KpiCard
-          label="Latest COGS"
-          value={fmt(latest?.cogs)}
-          icon={<Activity size={16} />}
-        />
+        <KpiCard label="Latest COGS" value={fmt(latest?.cogs)} icon={<Activity size={16} />} />
         <KpiCard
           label="Latest Net Income"
           value={fmt(latest?.net_income)}
           change={netIncomeDelta}
           tone="blue"
-          icon={latest?.net_income != null && latest.net_income >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+          icon={
+            latest?.net_income != null && latest.net_income >= 0 ? (
+              <TrendingUp size={16} />
+            ) : (
+              <TrendingDown size={16} />
+            )
+          }
         />
-        <KpiCard
-          label="Periods Loaded"
-          value={String(data.length)}
-          icon={<CalendarDays size={16} />}
-        />
+        <KpiCard label="Periods Loaded" value={String(data.length)} icon={<CalendarDays size={16} />} />
       </div>
 
-      <SectionCard
-        title="Performance Trends"
-        subtitle="Revenue, cost of goods sold, and net income over time."
-      >
+      <SectionCard title="Performance Trends" subtitle="Revenue, cost of goods sold, and net income over time.">
         <ResponsiveContainer width="100%" height={340}>
           <LineChart data={data} margin={{ top: 8, right: 16, left: 4, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" />
@@ -421,10 +416,7 @@ function TrendsTab({ companyId }: { companyId: string }) {
         </ResponsiveContainer>
       </SectionCard>
 
-      <SectionCard
-        title="Net Income Focus"
-        subtitle="A cleaner read on profitability direction across periods."
-      >
+      <SectionCard title="Net Income Focus" subtitle="A cleaner read on profitability direction across periods.">
         <ResponsiveContainer width="100%" height={240}>
           <AreaChart data={data} margin={{ top: 8, right: 16, left: 4, bottom: 0 }}>
             <defs>
@@ -458,20 +450,29 @@ export default function FinancialsPage() {
   const periodId = searchParams.get('period') ?? ''
   const [activeTab, setActiveTab] = useState<Tab>('income')
 
-  const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: 'income', label: 'Income Statement', icon: <FileSpreadsheet size={15} /> },
-    { id: 'variance', label: 'Variance Analysis', icon: <BarChart3 size={15} /> },
-    { id: 'trends', label: 'Trends', icon: <TrendingUp size={15} /> },
+  const tabs: { id: Tab; label: string; icon: React.ReactNode; hint: string }[] = [
+    { id: 'income', label: 'Income Statement', icon: <FileSpreadsheet size={15} />, hint: 'Period P&L view' },
+    { id: 'variance', label: 'Variance Analysis', icon: <BarChart3 size={15} />, hint: 'Actual vs budget' },
+    { id: 'trends', label: 'Trends', icon: <TrendingUp size={15} />, hint: 'Historical direction' },
   ]
+
+  const activeTabMeta = useMemo(
+    () => tabs.find((tab) => tab.id === activeTab) ?? tabs[0],
+    [activeTab]
+  )
 
   return (
     <div className="space-y-6">
       <div className="text-sm text-gray-500">
-        <Link to="/companies" className="hover:text-teal-600">Companies</Link>
+        <Link to="/workspace" className="hover:text-teal-600">
+          Workspace
+        </Link>
         {companyId && (
           <>
             <span className="mx-2">/</span>
-            <Link to={`/companies/${companyId}`} className="hover:text-teal-600">Company #{companyId}</Link>
+            <Link to={`/workspace/${companyId}`} className="hover:text-teal-600">
+              Company #{companyId}
+            </Link>
           </>
         )}
         <span className="mx-2">/</span>
@@ -483,11 +484,11 @@ export default function FinancialsPage() {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-teal-700 mb-3">
               <Activity size={14} />
-              Financial reporting
+              Reporting workspace
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Financial Reports</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Financials</h1>
             <p className="text-sm text-gray-500 mt-1">
-              Review period performance, analyze budget variance, and track trends over time.
+              Review statement performance, compare budget variance, and track financial direction over time.
             </p>
           </div>
 
@@ -506,8 +507,25 @@ export default function FinancialsPage() {
       </div>
 
       {!periodId && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-          No period selected. Navigate here from a company's financial periods to view income statement and variance details.
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
+          <div className="flex items-start gap-3">
+            <Layers3 size={18} className="text-amber-600 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-amber-800">Select a reporting period first</p>
+              <p className="text-sm text-amber-700 mt-1">
+                Open this page from a company workspace period to view statement and variance detail.
+              </p>
+              {companyId && (
+                <Link
+                  to={`/workspace/${companyId}`}
+                  className="inline-flex items-center gap-2 mt-3 text-sm font-medium text-amber-800 hover:text-amber-900"
+                >
+                  Return to workspace
+                  <ArrowRight size={14} />
+                </Link>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -527,11 +545,16 @@ export default function FinancialsPage() {
                   }`}
                 >
                   {tab.icon}
-                  {tab.label}
+                  <span>{tab.label}</span>
                 </button>
               )
             })}
           </div>
+        </div>
+
+        <div className="border-b border-gray-100 bg-white px-6 py-4">
+          <p className="text-sm font-semibold text-gray-900">{activeTabMeta.label}</p>
+          <p className="text-xs text-gray-500 mt-1">{activeTabMeta.hint}</p>
         </div>
 
         <div className="p-6">
@@ -540,9 +563,7 @@ export default function FinancialsPage() {
           )}
 
           {activeTab === 'income' && (!companyId || !periodId) && (
-            <div className="py-12 text-center text-gray-500">
-              Select a period to view the income statement.
-            </div>
+            <div className="py-12 text-center text-gray-500">Select a period to view the income statement.</div>
           )}
 
           {activeTab === 'variance' && companyId && periodId && (
@@ -550,12 +571,14 @@ export default function FinancialsPage() {
           )}
 
           {activeTab === 'variance' && (!companyId || !periodId) && (
-            <div className="py-12 text-center text-gray-500">
-              Select a period to view variance analysis.
-            </div>
+            <div className="py-12 text-center text-gray-500">Select a period to view variance analysis.</div>
           )}
 
           {activeTab === 'trends' && companyId && <TrendsTab companyId={companyId} />}
+
+          {activeTab === 'trends' && !companyId && (
+            <div className="py-12 text-center text-gray-500">Select a workspace company to view trends.</div>
+          )}
         </div>
       </div>
     </div>
