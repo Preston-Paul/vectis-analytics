@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider, useAuth } from './lib/auth'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -31,8 +31,12 @@ const queryClient = new QueryClient({
 
 function RootRedirect() {
   const { isAuthenticated, loading } = useAuth()
+
   if (loading) return null
-  return isAuthenticated ? <Navigate to="/overview" replace /> : <Navigate to="/login" replace />
+
+  return isAuthenticated
+    ? <Navigate to="/overview" replace />
+    : <Navigate to="/login" replace />
 }
 
 function ScenarioRedirect() {
@@ -41,6 +45,7 @@ function ScenarioRedirect() {
 
 function LegacyCompanyRedirect() {
   const { id } = useParams()
+
   return <Navigate to={id ? `/workspace/${id}` : '/workspace'} replace />
 }
 
