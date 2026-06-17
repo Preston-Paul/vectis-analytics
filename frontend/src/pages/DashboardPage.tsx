@@ -1,20 +1,34 @@
 import { Link } from 'react-router-dom'
 import {
-  Building2, BarChart2, DollarSign, TrendingUp,
-  PlusCircle, ArrowRight, FlaskConical, Activity,
+  Building2,
+  BarChart2,
+  DollarSign,
+  TrendingUp,
+  Activity,
+  FlaskConical,
+  ArrowRight,
+  AlertTriangle,
+  CheckCircle2,
+  Clock3,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  BarChart,
+  Bar,
+  Cell,
+} from 'recharts'
 import { useAuth } from '../lib/auth'
 import api from '../lib/api'
 import { fmtCurrency, fmtDate } from '../lib/format'
 import { SkeletonKPI, SkeletonRow } from '../components/SkeletonCard'
-import type { Company, FinancialPeriod } from '../types'
-import {
-  ResponsiveContainer, AreaChart, Area, XAxis, YAxis,
-  Tooltip, CartesianGrid,
-} from 'recharts'
-
-// ─── Data fetchers ──────────────────────────────────────────────
+import type { Company, FinancialPeriod, Scenario } from '../types'
 
 async function fetchCompanies(): Promise<Company[]> {
   const res = await api.get('/companies')
@@ -23,32 +37,66 @@ async function fetchCompanies(): Promise<Company[]> {
 
 async function fetchAllPeriods(companies: Company[]): Promise<FinancialPeriod[]> {
   const results = await Promise.all(
-    companies.map((c) => api.get(`/financials/${c.id}/periods`).then((r) => r.data as FinancialPeriod[]))
+    companies.map((c) =>
+      api.get(`/financials/${c.id}/periods`).then((r) => r.data as FinancialPeriod[])
+    )
   )
   return results.flat()
 }
 
-// ─── Sub-components ────────────────────────────────────────────
+async function fetchAllScenarios(companies: Company[]): Promise<Scenario[]> {
+  const results = await Promise.all(
+    companies.map((c) =>
+      api.get(`/scenarios/${c.id}/scenarios`).then((r) => r.data as Scenario[])
+    )
+  )
+  return results.flat()
+}
 
-interface KPICardProps {
+function KPIBlock({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  tone = 'default',
+}: {
   title: string
   value: string | number
   subtitle: string
   icon: React.ElementType
-  accent?: boolean
-}
+  tone?: 'default' | 'teal' | 'amber' | 'violet'
+}) {
+  const toneMap = {
+    default: {
+      card: 'border-gray-200 bg-white',
+      iconWrap: 'bg-gray-100',
+      icon: 'text-gray-600',
+    },
+    teal: {
+      card: 'border-teal-200 bg-teal-50/50',
+      iconWrap: 'bg-teal-100',
+      icon: 'text-teal-700',
+    },
+    amber: {
+      card: 'border-amber-200 bg-amber-50/60',
+      iconWrap: 'bg-amber-100',
+      icon: 'text-amber-700',
+    },
+    violet: {
+      card: 'border-violet-200 bg-violet-50/60',
+      iconWrap: 'bg-violet-100',
+      icon: 'text-violet-700',
+    },
+  }
 
-function KPICard({ title, value, subtitle, icon: Icon, accent }: KPICardProps) {
+  const styles = toneMap[tone]
+
   return (
-    <div className={`bg-white rounded-lg shadow-sm border ${
-      accent ? 'border-teal-200 bg-teal-50/30' : 'border-gray-200'
-    } p-5`}>
+    <div className={`rounded-xl border shadow-sm p-5 ${styles.card}`}>
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm font-medium text-gray-600">{title}</span>
-        <div className={`p-1.5 rounded-md ${
-          accent ? 'bg-teal-100' : 'bg-gray-100'
-        }`}>
-          <Icon size={16} className={accent ? 'text-teal-600' : 'text-gray-500'} />
+        <div className={`p-2 rounded-lg ${styles.iconWrap}`}>
+          <Icon size={16} className={styles.icon} />
         </div>
       </div>
       <p className="text-2xl font-bold text-gray-900 tabular-nums">{value}</p>
@@ -57,7 +105,36 @@ function KPICard({ title, value, subtitle, icon: Icon, accent }: KPICardProps) {
   )
 }
 
-// ─── Main page ───────────────────────────────────────────────
+function StatusCard({
+  title,
+  description,
+  tone,
+  icon: Icon,
+}: {
+  title: string
+  description: string
+  tone: 'good' | 'warn'
+  icon: React.ElementType
+}) {
+  const styles =
+    tone === 'good'
+      ? 'border-green-200 bg-green-50 text-green-700'
+      : 'border-amber-200 bg-amber-50 text-amber-700'
+
+  return (
+    <div className={`rounded-xl border p-4 ${styles}`}>
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5">
+          <Icon size={16} />
+        </div>
+        <div>
+          <p className="text-sm font-semibold">{title}</p>
+          <p className="text-xs mt-1 opacity-90">{description}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -67,16 +144,18 @@ export default function DashboardPage() {
     queryFn: fetchCompanies,
   })
 
-  const { data: allPeriods = [] } = useQuery({
+  const { data: allPeriods = [], isLoading: loadingPeriods } = useQuery({
     queryKey: ['all-periods', companies.map((c) => c.id)],
     queryFn: () => fetchAllPeriods(companies),
     enabled: companies.length > 0,
   })
 
-  const totalCompanies = companies.length
-  const totalPeriods = allPeriods.length
+  const { data: allScenarios = [], isLoading: loadingScenarios } = useQuery({
+    queryKey: ['all-scenarios', companies.map((c) => c.id)],
+    queryFn: () => fetchAllScenarios(companies),
+    enabled: companies.length > 0,
+  })
 
-  // Sort periods by date descending
   const sortedPeriods = [...allPeriods].sort(
     (a, b) => new Date(b.period_date).getTime() - new Date(a.period_date).getTime()
   )
@@ -92,12 +171,16 @@ export default function DashboardPage() {
   })
 
   const latestRevenue = latestStatement?.revenue?.total ?? latestStatement?.revenue ?? null
-  const periodsWithBudgets = allPeriods.filter((p: FinancialPeriod) =>
+  const totalCompanies = companies.length
+  const totalPeriods = allPeriods.length
+  const totalScenarios = allScenarios.length
+  const periodsWithBudgets = allPeriods.filter((p) =>
     p.line_items?.some((li) => li.budget_amount != null)
   ).length
+  const budgetCoveragePct =
+    totalPeriods > 0 ? Math.round((periodsWithBudgets / totalPeriods) * 100) : 0
 
-  // Build a simple period-count chart grouped by month for trend visualization
-  const trendData = (() => {
+  const periodTrend = (() => {
     if (!allPeriods.length) return []
     const counts: Record<string, number> = {}
     allPeriods.forEach((p) => {
@@ -110,85 +193,178 @@ export default function DashboardPage() {
       .map(([month, count]) => ({ month, count }))
   })()
 
-  const isLoading = loadingCompanies
+  const scenarioMix = [
+    {
+      name: 'Revenue',
+      value: allScenarios.filter((s) => s.revenue_change_pct !== 0).length,
+    },
+    {
+      name: 'COGS',
+      value: allScenarios.filter((s) => s.cogs_change_pct !== 0).length,
+    },
+    {
+      name: 'OpEx',
+      value: allScenarios.filter((s) => s.opex_change_pct !== 0).length,
+    },
+    {
+      name: 'Commodity',
+      value: allScenarios.filter((s) => s.commodity_price_change_pct !== 0).length,
+    },
+  ]
+
+  const recentScenarios = [...allScenarios].slice(0, 5)
+  const isLoading = loadingCompanies || loadingPeriods || loadingScenarios
+
+  const alertItems = [
+    totalCompanies === 0
+      ? {
+          title: 'Workspace setup incomplete',
+          description: 'Add your first company to start building financial periods and scenarios.',
+          tone: 'warn' as const,
+          icon: AlertTriangle,
+        }
+      : null,
+    totalPeriods === 0
+      ? {
+          title: 'No financial periods loaded',
+          description: 'Import or create a period to unlock statements, variance, and scenarios.',
+          tone: 'warn' as const,
+          icon: AlertTriangle,
+        }
+      : null,
+    totalPeriods > 0 && periodsWithBudgets < totalPeriods
+      ? {
+          title: 'Budget coverage is partial',
+          description: `${periodsWithBudgets} of ${totalPeriods} periods include budget data.`,
+          tone: 'warn' as const,
+          icon: Clock3,
+        }
+      : null,
+    totalScenarios > 0
+      ? {
+          title: 'Scenario modeling active',
+          description: `${totalScenarios} saved scenario${totalScenarios === 1 ? '' : 's'} ready for review.`,
+          tone: 'good' as const,
+          icon: CheckCircle2,
+        }
+      : null,
+  ].filter(Boolean) as Array<{
+    title: string
+    description: string
+    tone: 'good' | 'warn'
+    icon: React.ElementType
+  }>
 
   return (
-    <div className="max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 text-sm mt-0.5">
-          Welcome back{user?.full_name ? `, ${user.full_name}` : ''}. Here’s your financial overview.
-        </p>
+    <div className="max-w-7xl mx-auto space-y-6">
+      <div className="rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-teal-50/50 shadow-sm">
+        <div className="px-6 py-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700 mb-2">
+              Overview
+            </p>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Welcome back{user?.full_name ? `, ${user.full_name}` : ''}.
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Here’s the current snapshot across your workspace, financial data, and scenario activity.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Link
+              to="/companies"
+              className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              <Building2 size={15} />
+              Workspace
+            </Link>
+            <Link
+              to="/commodity"
+              className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              <TrendingUp size={15} />
+              Commodities
+            </Link>
+            <Link
+              to="/scenarios"
+              className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-700"
+            >
+              <FlaskConical size={15} />
+              Scenario Lab
+            </Link>
+          </div>
+        </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => <SkeletonKPI key={i} />)
         ) : (
           <>
-            <KPICard
-              title="Total Companies"
-              value={totalCompanies}
-              subtitle={totalCompanies === 0 ? 'Add your first company' : `${totalCompanies} tracked`}
-              icon={Building2}
-              accent={totalCompanies > 0}
-            />
-            <KPICard
-              title="Financial Periods"
-              value={totalPeriods}
-              subtitle={totalPeriods === 0 ? 'No periods yet' : 'Across all companies'}
-              icon={BarChart2}
-            />
-            <KPICard
+            <KPIBlock
               title="Latest Revenue"
               value={fmtCurrency(latestRevenue)}
-              subtitle={latestPeriod ? `Period ${fmtDate(latestPeriod.period_date)}` : 'No periods yet'}
+              subtitle={latestPeriod ? `Latest period: ${fmtDate(latestPeriod.period_date)}` : 'No period available'}
               icon={DollarSign}
-              accent={latestRevenue != null}
+              tone={latestRevenue != null ? 'teal' : 'default'}
             />
-            <KPICard
-              title="Periods w/ Budgets"
-              value={periodsWithBudgets}
-              subtitle={periodsWithBudgets === 0 ? 'Add budgets for variance' : 'Ready for variance analysis'}
-              icon={TrendingUp}
+            <KPIBlock
+              title="Financial Periods"
+              value={totalPeriods}
+              subtitle={totalPeriods === 0 ? 'No data loaded yet' : 'Tracked across workspace'}
+              icon={BarChart2}
+            />
+            <KPIBlock
+              title="Budget Coverage"
+              value={`${budgetCoveragePct}%`}
+              subtitle={totalPeriods === 0 ? 'No periods yet' : `${periodsWithBudgets} of ${totalPeriods} periods`}
+              icon={Activity}
+              tone={budgetCoveragePct >= 75 ? 'teal' : 'amber'}
+            />
+            <KPIBlock
+              title="Saved Scenarios"
+              value={totalScenarios}
+              subtitle={totalScenarios === 0 ? 'No what-if models yet' : 'Ready for analysis'}
+              icon={FlaskConical}
+              tone={totalScenarios > 0 ? 'violet' : 'default'}
             />
           </>
         )}
       </div>
 
-      {/* Trend chart + companies list */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 mb-5">
-        {/* Period trend chart */}
-        <div className="lg:col-span-3 bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+        <div className="xl:col-span-2 rounded-2xl border border-gray-200 bg-white shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-sm font-semibold text-gray-900">Period Activity</h2>
-              <p className="text-xs text-gray-400">Financial periods added over time</p>
+              <p className="text-xs text-gray-400 mt-1">Recent financial period volume across the workspace</p>
             </div>
             <Activity size={16} className="text-gray-400" />
           </div>
-          {trendData.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <BarChart2 size={32} className="text-gray-200 mb-2" />
-              <p className="text-sm text-gray-400">No data yet</p>
-              <p className="text-xs text-gray-300 mt-1">Add financial periods to see the trend</p>
+
+          {isLoading ? (
+            <div className="h-[220px] animate-pulse rounded-xl bg-gray-100" />
+          ) : periodTrend.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <BarChart2 size={30} className="text-gray-200 mb-2" />
+              <p className="text-sm font-medium text-gray-500">No trend data yet</p>
+              <p className="text-xs text-gray-400 mt-1">Add or import financial periods to populate this view.</p>
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={180}>
-              <AreaChart data={trendData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+            <ResponsiveContainer width="100%" height={220}>
+              <AreaChart data={periodTrend} margin={{ top: 4, right: 6, left: -24, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="tealGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#0d9488" stopOpacity={0.15} />
+                  <linearGradient id="overviewTrend" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#0d9488" stopOpacity={0.18} />
                     <stop offset="95%" stopColor="#0d9488" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#9ca3af' }} tickLine={false} axisLine={false} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#9ca3af' }} tickLine={false} axisLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
                 <Tooltip
-                  contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e5e7eb' }}
+                  contentStyle={{ fontSize: 12, borderRadius: 10, border: '1px solid #e5e7eb' }}
                   labelStyle={{ fontWeight: 600 }}
                 />
                 <Area
@@ -196,9 +372,9 @@ export default function DashboardPage() {
                   dataKey="count"
                   name="Periods"
                   stroke="#0d9488"
-                  strokeWidth={2}
-                  fill="url(#tealGrad)"
-                  dot={{ fill: '#0d9488', r: 3 }}
+                  strokeWidth={2.5}
+                  fill="url(#overviewTrend)"
+                  dot={{ r: 3, fill: '#0d9488' }}
                   activeDot={{ r: 5 }}
                 />
               </AreaChart>
@@ -206,88 +382,138 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Companies list */}
-        <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-900">Your Companies</h2>
-            <Link to="/companies" className="text-xs text-teal-600 hover:underline">View all</Link>
+        <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900">System Status</h2>
+              <p className="text-xs text-gray-400 mt-1">Flags and readiness checks</p>
+            </div>
+            <AlertTriangle size={16} className="text-gray-400" />
           </div>
 
-          {isLoading && (
-            <div className="space-y-0.5">
-              {Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)}
-            </div>
-          )}
-
-          {!isLoading && companies.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-10 text-center">
-              <Building2 size={28} className="text-gray-200 mb-2" />
-              <p className="text-sm text-gray-500">No companies yet.</p>
-              <Link to="/companies" className="mt-2 text-xs text-teal-600 hover:underline">Add one →</Link>
-            </div>
-          )}
-
-          {!isLoading && companies.length > 0 && (
-            <ul className="divide-y divide-gray-100">
-              {companies.slice(0, 6).map((c) => (
-                <li key={c.id}>
-                  <Link
-                    to={`/companies/${c.id}`}
-                    className="flex items-center justify-between py-2.5 hover:text-teal-600 group"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-md bg-teal-50 flex items-center justify-center flex-shrink-0">
-                        <Building2 size={13} className="text-teal-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 group-hover:text-teal-600 leading-tight">{c.name}</p>
-                        <p className="text-xs text-gray-400">{c.location}</p>
-                      </div>
-                    </div>
-                    <ArrowRight size={13} className="text-gray-300 group-hover:text-teal-500" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
+          <div className="space-y-3">
+            {alertItems.length === 0 ? (
+              <StatusCard
+                title="Everything looks healthy"
+                description="Core workspace, period, and scenario data are all in good shape."
+                tone="good"
+                icon={CheckCircle2}
+              />
+            ) : (
+              alertItems.map((item) => (
+                <StatusCard
+                  key={item.title}
+                  title={item.title}
+                  description={item.description}
+                  tone={item.tone}
+                  icon={item.icon}
+                />
+              ))
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-        <h2 className="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Link
-            to="/companies"
-            className="flex items-center justify-between px-4 py-3 rounded-md border border-gray-200 hover:border-teal-400 hover:bg-teal-50 transition-colors group"
-          >
-            <div className="flex items-center gap-3">
-              <PlusCircle size={17} className="text-teal-600" />
-              <span className="text-sm font-medium text-gray-700 group-hover:text-teal-700">Add Company</span>
+      <div className="grid grid-cols-1 xl:grid-cols-5 gap-5">
+        <div className="xl:col-span-2 rounded-2xl border border-gray-200 bg-white shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900">Scenario Driver Mix</h2>
+              <p className="text-xs text-gray-400 mt-1">Which assumptions are being modeled most often</p>
             </div>
-            <ArrowRight size={15} className="text-gray-400 group-hover:text-teal-600" />
-          </Link>
-          <Link
-            to="/commodity"
-            className="flex items-center justify-between px-4 py-3 rounded-md border border-gray-200 hover:border-teal-400 hover:bg-teal-50 transition-colors group"
-          >
-            <div className="flex items-center gap-3">
-              <TrendingUp size={17} className="text-teal-600" />
-              <span className="text-sm font-medium text-gray-700 group-hover:text-teal-700">Market Prices</span>
+            <FlaskConical size={16} className="text-gray-400" />
+          </div>
+
+          {isLoading ? (
+            <div className="h-[220px] animate-pulse rounded-xl bg-gray-100" />
+          ) : totalScenarios === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <FlaskConical size={28} className="text-gray-200 mb-2" />
+              <p className="text-sm font-medium text-gray-500">No scenarios yet</p>
+              <p className="text-xs text-gray-400 mt-1">Create a scenario to begin what-if analysis.</p>
             </div>
-            <ArrowRight size={15} className="text-gray-400 group-hover:text-teal-600" />
-          </Link>
-          {companies.length > 0 && (
-            <Link
-              to={`/scenarios/${companies[0].id}`}
-              className="flex items-center justify-between px-4 py-3 rounded-md border border-gray-200 hover:border-violet-400 hover:bg-violet-50 transition-colors group"
-            >
-              <div className="flex items-center gap-3">
-                <FlaskConical size={17} className="text-violet-600" />
-                <span className="text-sm font-medium text-gray-700 group-hover:text-violet-700">Scenario Model</span>
-              </div>
-              <ArrowRight size={15} className="text-gray-400 group-hover:text-violet-600" />
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={scenarioMix} margin={{ top: 4, right: 6, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
+                <Tooltip
+                  contentStyle={{ fontSize: 12, borderRadius: 10, border: '1px solid #e5e7eb' }}
+                />
+                <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                  {scenarioMix.map((entry) => (
+                    <Cell
+                      key={entry.name}
+                      fill={
+                        entry.name === 'Revenue'
+                          ? '#0d9488'
+                          : entry.name === 'COGS'
+                          ? '#f59e0b'
+                          : entry.name === 'OpEx'
+                          ? '#8b5cf6'
+                          : '#334155'
+                      }
+                      fillOpacity={0.9}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        <div className="xl:col-span-3 rounded-2xl border border-gray-200 bg-white shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900">Recent Scenarios</h2>
+              <p className="text-xs text-gray-400 mt-1">Latest saved scenario models across your companies</p>
+            </div>
+            <Link to="/scenarios" className="text-xs font-medium text-teal-600 hover:underline">
+              Open scenarios
             </Link>
+          </div>
+
+          {isLoading ? (
+            <div className="space-y-1">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <SkeletonRow key={i} />
+              ))}
+            </div>
+          ) : recentScenarios.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-14 text-center">
+              <FlaskConical size={28} className="text-gray-200 mb-2" />
+              <p className="text-sm font-medium text-gray-500">No saved scenarios</p>
+              <p className="text-xs text-gray-400 mt-1">Create a model to start tracking what-if cases.</p>
+            </div>
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {recentScenarios.map((scenario) => {
+                const direction =
+                  scenario.revenue_change_pct !== 0
+                    ? `Revenue ${scenario.revenue_change_pct > 0 ? 'up' : 'down'} ${Math.abs(scenario.revenue_change_pct).toFixed(1)}%`
+                    : scenario.cogs_change_pct !== 0
+                    ? `COGS ${scenario.cogs_change_pct > 0 ? 'up' : 'down'} ${Math.abs(scenario.cogs_change_pct).toFixed(1)}%`
+                    : 'Mixed assumption changes'
+
+                return (
+                  <li key={scenario.id}>
+                    <Link
+                      to={`/scenarios/${scenario.company_id}`}
+                      className="flex items-center justify-between gap-3 py-3 group"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 group-hover:text-teal-700 truncate">
+                          {scenario.name}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1 truncate">{direction}</p>
+                      </div>
+                      <ArrowRight size={14} className="text-gray-300 group-hover:text-teal-600 flex-shrink-0" />
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
           )}
         </div>
       </div>
