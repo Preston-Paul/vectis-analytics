@@ -33,33 +33,62 @@ EIA_BASE_URL = "https://api.eia.gov/v2"
 _COMMODITY_CONFIG: list[dict] = [
     {
         "symbol": "WTI",
-        "name": "WTI Crude Oil (USD/bbl)",
+        "name": "WTI Crude Oil",
         "endpoint": "/petroleum/pri/spt/data/",
         "series": "RWTC",
         "frequency": "weekly",
     },
     {
-        "symbol": "BRENT",
-        "name": "Brent Crude Oil (USD/bbl)",
+        "symbol": "BRT",
+        "name": "Brent Crude Oil",
         "endpoint": "/petroleum/pri/spt/data/",
         "series": "RBRTE",
         "frequency": "weekly",
     },
     {
-        "symbol": "HH",
-        "name": "Henry Hub Natural Gas (USD/MMBtu)",
+        "symbol": "NG",
+        "name": "Natural Gas (Henry Hub)",
         "endpoint": "/natural-gas/pri/fut/data/",
         "series": "RNGWHHD",
         "frequency": "monthly",
     },
     {
         "symbol": "RBOB",
-        "name": "RBOB Gasoline (USD/gal)",
+        "name": "RBOB Gasoline",
         "endpoint": "/petroleum/pri/spt/data/",
         "series": "EER_EPMRR_PF4_Y05LA_DPG",
         "frequency": "weekly",
     },
+    {
+        "symbol": "HO",
+        "name": "Heating Oil",
+        "endpoint": "/petroleum/pri/spt/data/",
+        "series": "RHF",
+        "frequency": "weekly",
+    },
+    {
+        "symbol": "SUL",
+        "name": "Ultra-Low Sulfur Diesel",
+        "endpoint": "/petroleum/pri/spt/data/",
+        "series": "RHARD",
+        "frequency": "weekly",
+    },
+    {
+        "symbol": "ETH",
+        "name": "Ethanol",
+        "endpoint": "/petroleum/pri/spt/data/",
+        "series": "RSEMT",
+        "frequency": "weekly",
+    },
+    {
+        "symbol": "LNG",
+        "name": "Liquefied Natural Gas",
+        "endpoint": "/natural-gas/pri/fut/data/",
+        "series": "RNGC1",
+        "frequency": "monthly",
+    },
 ]
+
 
 # ---------------------------------------------------------------------------
 # In-memory cache so we don't hammer the EIA API on every page refresh.
@@ -72,10 +101,14 @@ _CACHE_TTL_SECONDS = 900  # 15 minutes
 
 # Fallback mock prices used when EIA is unreachable.
 _FALLBACK: dict[str, dict] = {
-    "WTI":   {"price": 78.42, "change_pct": -0.63},
-    "BRENT": {"price": 82.15, "change_pct": -0.48},
-    "HH":    {"price": 2.34,  "change_pct":  1.20},
-    "RBOB":  {"price": 2.47,  "change_pct": -0.82},
+    "WTI":  {"price": 78.42, "change_pct": -0.63},
+    "BRT":  {"price": 82.15, "change_pct": -0.48},
+    "NG":   {"price": 2.34, "change_pct": 1.20},
+    "RBOB": {"price": 2.47, "change_pct": -0.82},
+    "HO":   {"price": 2.73, "change_pct": 0.45},
+    "SUL":  {"price": 2.85, "change_pct": 0.19},
+    "ETH":  {"price": 1.72, "change_pct": -0.88},
+    "LNG":  {"price": 9.35, "change_pct": 3.11},
 }
 
 
